@@ -1,196 +1,239 @@
 'use strict';
 
-(function () {
-  var path = require('path'),
-      envFile = path.join(process.cwd(), '.chcpenv'),
-      Q = require('q'),
-      _ = require('lodash'),
-      fs = require("fs"),
-      buildDirectory = path.join(process.cwd(), '.chcpbuild'),
-      watch = require('watch'),
-      express = require('express'),
-      app = express(),
-      assetPort = process.env.PORT || 31284,
-      disablePublicTunnel = process.env.DISABLE_PUBLIC_TUNNEL || false,
-      compression = require('compression'),
-      build = require('./build.js').execute,
-      minimatch = require('minimatch'),
-      hidefile = require('hidefile'),
-      io,
-      chcpContext,
-      sourceDirectory,
-      ignoredFiles,
-      opts = {};
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
-  module.exports = {
-    execute: execute
-  };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-  function updateLocalEnv(localEnv) {
-    localEnv.config_url = localEnv.content_url + '/chcp.json';
+exports.execute = execute;
 
-    var json = JSON.stringify(localEnv, null, 2);
-    fs.writeFileSync(envFile, json);
+var _path = require('path');
 
-    return localEnv;
-  }
+var _path2 = _interopRequireDefault(_path);
 
-  function execute(context) {
+var _q = require('q');
+
+var _q2 = _interopRequireDefault(_q);
+
+var _lodash = require('lodash');
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
+var _watch = require('watch');
+
+var _watch2 = _interopRequireDefault(_watch);
+
+var _express = require('express');
+
+var _express2 = _interopRequireDefault(_express);
+
+var _compression = require('compression');
+
+var _compression2 = _interopRequireDefault(_compression);
+
+var _minimatch = require('minimatch');
+
+var _minimatch2 = _interopRequireDefault(_minimatch);
+
+var _hidefile = require('hidefile');
+
+var _hidefile2 = _interopRequireDefault(_hidefile);
+
+var _ngrok = require('ngrok');
+
+var _ngrok2 = _interopRequireDefault(_ngrok);
+
+var _socket = require('socket.io');
+
+var _socket2 = _interopRequireDefault(_socket);
+
+var _build = require('./build.js');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var assetPort = process.env.PORT || 31284;
+var disablePublicTunnel = process.env.DISABLE_PUBLIC_TUNNEL || false;
+var envFile = _path2.default.join(process.cwd(), '.chcpenv');
+
+var app = (0, _express2.default)();
+var chcpContext = void 0;
+var io = void 0;
+var sourceDirectory = void 0;
+var ignoredFiles = void 0;
+var opts = void 0;
+
+function execute(context) {
+    var funcs = [];
+
     chcpContext = context;
     ignoredFiles = context.ignoredFiles;
     chcpContext.argv.localdev = true;
     sourceDirectory = chcpContext.sourceDirectory;
 
-    var executeDfd = Q.defer(),
-        funcs = [];
-
     funcs.push(function () {
-      if (disablePublicTunnel) return;
-      return publicTunnel(assetPort);
+        if (disablePublicTunnel) {
+            return;
+        }
+
+        return publicTunnel(assetPort);
     });
 
     funcs.push(function (content_url) {
-      var dfd = Q.defer();
-
-      if (!disablePublicTunnel) {
-        opts.content_url = content_url;
-        chcpContext.argv.content_url = content_url;
-      }
-
-      dfd.resolve();
-      return dfd.promise;
+        if (!disablePublicTunnel) {
+            opts.content_url = content_url;
+            chcpContext.argv.content_url = content_url;
+        }
     });
 
     funcs.push(function (debugOpts) {
-      if (debugOpts) {
-        opts.debug_url = debugOpts.debug_url;
-        opts.console_url = debugOpts.console_url;
-      }
+        if (debugOpts) {
+            opts.debug_url = debugOpts.debug_url;
+            opts.console_url = debugOpts.console_url;
+        }
 
-      return assetServer(opts);
+        return assetServer();
     });
 
     funcs.push(function (local_url) {
-      console.log('local_url', local_url);
-      opts.local_url = local_url;
+        opts.local_url = local_url;
 
-      return build(chcpContext);
+        return (0, _build.execute)(chcpContext);
     });
 
     funcs.push(function (config) {
-      if (disablePublicTunnel) {
-        updateLocalEnv({ content_url: config.content_url });
-      }
-      console.log('cordova-hcp local server available at: ' + opts.local_url);
-      console.log('cordova-hcp public server available at: ' + config.content_url);
+        if (disablePublicTunnel) {
+            updateLocalEnv({ content_url: config.content_url });
+        }
+
+        console.log('cordova-hcp local server available at: ' + opts.local_url);
+        console.log('cordova-hcp public server available at: ' + config.content_url);
     });
 
-    return funcs.reduce(Q.when, Q('initial'));
-  }
+    return funcs.reduce(_q2.default.when, (0, _q2.default)('initial'));
+}
 
-  function fileChangeFilter(file) {
+function updateLocalEnv(localEnv) {
+    localEnv.config_url = localEnv.content_url + '/chcp.json';
+
+    var json = JSON.stringify(localEnv, null, 2);
+    _fs2.default.writeFileSync(envFile, json);
+
+    return localEnv;
+}
+
+function fileChangeFilter(file) {
     // Ignore changes in files from the ignore list
     var fileIsAllowed = true;
-    var relativeFilePath = path.relative(chcpContext.sourceDirectory, file);
+    var relativeFilePath = _path2.default.relative(chcpContext.sourceDirectory, file);
+
     for (var i = 0, len = ignoredFiles.length; i < len; i++) {
-      if (hidefile.isHiddenSync(file) || minimatch(relativeFilePath, ignoredFiles[i])) {
-        fileIsAllowed = false;
-        break;
-      }
+        if (_hidefile2.default.isHiddenSync(file) || (0, _minimatch2.default)(relativeFilePath, ignoredFiles[i])) {
+            fileIsAllowed = false;
+            break;
+        }
     }
 
     return fileIsAllowed;
-  }
+}
 
-  function assetServer(opts) {
-    var serverDfd = Q.defer(),
-        localUrl = 'http://localhost:' + assetPort;
+function assetServer() {
+    var serverDfd = _q2.default.defer();
+    var localUrl = 'http://localhost:' + assetPort;
 
     // If a lot of files changes at the same time, we only want to trigger the change event once.
-    handleFileChange = _.debounce(handleFileChange, 500);
 
     try {
-      killCaches(app);
-      serveStaticAssets(app, opts);
-      serveSocketIO(app);
-      watchForFileChange();
-      serverDfd.resolve(localUrl);
+        killCaches(app);
+        serveStaticAssets(app);
+        serveSocketIO(app);
+        watchForFileChange();
+        serverDfd.resolve(localUrl);
     } catch (err) {
-      console.error('assetServer error: ', err);
-      serverDfd.reject(err);
+        console.error('assetServer error: ', err);
+        serverDfd.reject(err);
     }
 
     return serverDfd.promise;
-  }
+}
 
-  function watchForFileChange() {
+function watchForFileChange() {
     // Monitor for file changes
     console.log('Checking: ', sourceDirectory);
-    watch.watchTree(sourceDirectory, { filter: fileChangeFilter }, function (f, curr, prev) {
-      if (typeof f == "object" && prev === null && curr === null) {
-        // Finished walking the tree
-        // console.log('Finished');
-      } else {
-          handleFileChange(f);
+
+    var handleFileChange = _lodash2.default.debounce(handleFileChange, 500);
+
+    _watch2.default.watchTree(sourceDirectory, { filter: fileChangeFilter }, function (f, curr, prev) {
+        if ((typeof f === 'undefined' ? 'undefined' : _typeof(f)) == "object" && prev === null && curr === null) {
+            // Finished walking the tree
+            // console.log('Finished');
+        } else {
+            handleFileChange(f);
         }
     });
-  }
+}
 
-  function handleFileChange(file) {
+function handleFileChange(file) {
     console.log('File changed: ', file);
-    build(chcpContext).then(function (config) {
-      console.log('Should trigger reload for build: ' + config.release);
-      io.emit('release', { config: config });
-    });
-  }
 
-  function serveSocketIO(app) {
+    (0, _build.execute)(chcpContext).then(function (config) {
+        console.log('Should trigger reload for build: ' + config.release);
+        io.emit('release', { config: config });
+    });
+}
+
+function serveSocketIO(app) {
     // Let's start the server
-    io = require("socket.io")(app.listen(assetPort));
+    io = (0, _socket2.default)(app.listen(assetPort));
 
     // Open up socket for file change notifications
     //io.set('transports', ['polling']);
     io.on('connection', function (socket) {
-      console.log('a user connected');
-      socket.on('disconnect', function () {
-        console.log('user disconnected');
-      });
+        console.log('a user connected');
+
+        socket.on('disconnect', function () {
+            console.log('user disconnected');
+        });
     });
-  }
+}
 
-  function serveStaticAssets(app, opts) {
-
+function serveStaticAssets(app) {
     // Static assets
-    app.use(compression());
+    app.use((0, _compression2.default)());
     app.enable('view cache');
-    app.use('/', express['static'](sourceDirectory, { maxAge: 0 }));
-  }
+    app.use('/', _express2.default.static(sourceDirectory, { maxAge: 0 }));
+}
 
-  function killCaches(ass) {
+function killCaches() {
     // Disable caches
     app.disable('etag');
-    app.use(function (req, res, next) {
-      req.headers['if-none-match'] = 'no-match-for-this';
-      next();
-    });
-  }
 
-  function publicTunnel(port, options) {
-    var publicTunnelDfd = Q.defer(),
-        ngrok = require('ngrok');
+    app.use(function (req, res, next) {
+        req.headers['if-none-match'] = 'no-match-for-this';
+        next();
+    });
+}
+
+function publicTunnel(port) {
+    var publicTunnelDfd = _q2.default.defer();
 
     // And make it accessible from the internet
-    ngrok.connect(port, function (err, url) {
-      if (err) {
-        publicTunnelDfd.reject(err);
-        return console.log('Could not create tunnel: ', err);
-      }
+    _ngrok2.default.connect(port, function (err, url) {
+        if (err) {
+            publicTunnelDfd.reject(err);
 
-      updateLocalEnv({ content_url: url });
+            return console.log('Could not create tunnel: ', err);
+        }
 
-      publicTunnelDfd.resolve(url);
+        updateLocalEnv({ content_url: url });
+
+        publicTunnelDfd.resolve(url);
     });
 
     return publicTunnelDfd.promise;
-  }
-})();
+}
+//# sourceMappingURL=server.js.map
