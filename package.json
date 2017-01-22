@@ -4,7 +4,7 @@
   "description": "Cordova Hot Code Push CLI",
   "preferGlobal": true,
   "bin": {
-    "cordova-hcp": "bin/cordova-hcp"
+    "cordova-hcp": "dist/index.js"
   },
   "engines": {
     "node": ">=0.10.3 <=5.1.0"
@@ -41,6 +41,7 @@
     "fs-extra": "^2.0.0",
     "ftp-client": "^0.2.2",
     "hidefile": "^2.0.0",
+    "level": "^1.4.0",
     "lodash": "^4.17.4",
     "minimatch": "^3.0.3",
     "ngrok": "^2.2.5",
@@ -62,6 +63,8 @@
     "chai": "^3.5.0",
     "eslint": "^3.14.0",
     "eslint-config-airbnb": "14.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^3.0.2",
     "eslint-plugin-react": "^6.9.0",
     "jscs": "^3.0.7",
     "mocha": "^3.2.0",
