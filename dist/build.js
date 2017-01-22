@@ -52,6 +52,10 @@ function execute(context) {
         });
 
         _async2.default.parallelLimit(hashQueue, 10, function (err, result) {
+            if (err) {
+                executeDfd.reject(err);
+            }
+
             result.sort(function (a, b) {
                 return a.file.localeCompare(b.file);
             });
@@ -59,7 +63,7 @@ function execute(context) {
             var json = JSON.stringify(result, null, 2);
             _fsExtra2.default.writeFile(context.manifestFilePath, json, function (err) {
                 if (err) {
-                    return console.log(err);
+                    executeDfd.reject(err);
                 }
 
                 if (context.argv && context.argv.localdev) {
@@ -69,7 +73,7 @@ function execute(context) {
                 var json = JSON.stringify(config, null, 2);
                 _fsExtra2.default.writeFile(chcpContext.projectsConfigFilePath, json, function (err) {
                     if (err) {
-                        return console.log(err);
+                        executeDfd.reject(err);
                     }
 
                     console.log('Build ' + config.release + ' created in ' + chcpContext.sourceDirectory);

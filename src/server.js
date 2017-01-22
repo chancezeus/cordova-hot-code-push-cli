@@ -20,7 +20,6 @@ let chcpContext;
 let io;
 let sourceDirectory;
 let ignoredFiles;
-let opts;
 
 export function execute(context) {
     const funcs = [];
@@ -40,24 +39,24 @@ export function execute(context) {
 
     funcs.push(function (content_url) {
         if (!disablePublicTunnel) {
-            opts.content_url = content_url;
-            chcpContext.argv.content_url = content_url;
+            context.argv.content_url = content_url;
         }
     });
 
     funcs.push(function (debugOpts) {
         if (debugOpts) {
-            opts.debug_url = debugOpts.debug_url;
-            opts.console_url = debugOpts.console_url;
+            context.debug_url = debugOpts.debug_url;
+            context.console_url = debugOpts.console_url;
         }
 
         return assetServer();
     });
 
     funcs.push(function (local_url) {
-        opts.local_url = local_url;
+        console.log('local_url', local_url);
+        context.local_url = local_url;
 
-        return build(chcpContext);
+        return build(context);
     });
 
     funcs.push(function (config) {
@@ -65,7 +64,7 @@ export function execute(context) {
             updateLocalEnv({content_url: config.content_url});
         }
 
-        console.log('cordova-hcp local server available at: ' + opts.local_url);
+        console.log('cordova-hcp local server available at: ' + context.local_url);
         console.log('cordova-hcp public server available at: ' + config.content_url);
     });
 
@@ -120,14 +119,14 @@ function watchForFileChange() {
     // Monitor for file changes
     console.log('Checking: ', sourceDirectory);
 
-    const handleFileChange = _.debounce(handleFileChange, 500);
+    const _handleFileChange = _.debounce(handleFileChange, 500);
 
     watch.watchTree(sourceDirectory, {filter: fileChangeFilter}, function (f, curr, prev) {
         if (typeof f == "object" && prev === null && curr === null) {
             // Finished walking the tree
             // console.log('Finished');
         } else {
-            handleFileChange(f);
+            _handleFileChange(f);
         }
     });
 }

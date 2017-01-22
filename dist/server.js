@@ -65,7 +65,6 @@ var chcpContext = void 0;
 var io = void 0;
 var sourceDirectory = void 0;
 var ignoredFiles = void 0;
-var opts = void 0;
 
 function execute(context) {
     var funcs = [];
@@ -85,24 +84,24 @@ function execute(context) {
 
     funcs.push(function (content_url) {
         if (!disablePublicTunnel) {
-            opts.content_url = content_url;
-            chcpContext.argv.content_url = content_url;
+            context.argv.content_url = content_url;
         }
     });
 
     funcs.push(function (debugOpts) {
         if (debugOpts) {
-            opts.debug_url = debugOpts.debug_url;
-            opts.console_url = debugOpts.console_url;
+            context.debug_url = debugOpts.debug_url;
+            context.console_url = debugOpts.console_url;
         }
 
         return assetServer();
     });
 
     funcs.push(function (local_url) {
-        opts.local_url = local_url;
+        console.log('local_url', local_url);
+        context.local_url = local_url;
 
-        return (0, _build.execute)(chcpContext);
+        return (0, _build.execute)(context);
     });
 
     funcs.push(function (config) {
@@ -110,7 +109,7 @@ function execute(context) {
             updateLocalEnv({ content_url: config.content_url });
         }
 
-        console.log('cordova-hcp local server available at: ' + opts.local_url);
+        console.log('cordova-hcp local server available at: ' + context.local_url);
         console.log('cordova-hcp public server available at: ' + config.content_url);
     });
 
@@ -165,14 +164,14 @@ function watchForFileChange() {
     // Monitor for file changes
     console.log('Checking: ', sourceDirectory);
 
-    var handleFileChange = _lodash2.default.debounce(handleFileChange, 500);
+    var _handleFileChange = _lodash2.default.debounce(handleFileChange, 500);
 
     _watch2.default.watchTree(sourceDirectory, { filter: fileChangeFilter }, function (f, curr, prev) {
         if ((typeof f === 'undefined' ? 'undefined' : _typeof(f)) == "object" && prev === null && curr === null) {
             // Finished walking the tree
             // console.log('Finished');
         } else {
-            handleFileChange(f);
+            _handleFileChange(f);
         }
     });
 }

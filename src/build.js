@@ -19,6 +19,10 @@ export function execute(context) {
         const hashQueue = files.filter(file => !hidefile.isHiddenSync(file)).map((file) => hashFile.bind(null, file));
 
         async.parallelLimit(hashQueue, 10, function (err, result) {
+            if (err) {
+                executeDfd.reject(err);
+            }
+
             result.sort((a, b) => {
                 return a.file.localeCompare(b.file)
             });
@@ -26,7 +30,7 @@ export function execute(context) {
             const json = JSON.stringify(result, null, 2);
             fs.writeFile(context.manifestFilePath, json, function (err) {
                 if (err) {
-                    return console.log(err);
+                    executeDfd.reject(err);
                 }
 
                 if (context.argv && context.argv.localdev) {
@@ -36,7 +40,7 @@ export function execute(context) {
                 const json = JSON.stringify(config, null, 2);
                 fs.writeFile(chcpContext.projectsConfigFilePath, json, function (err) {
                     if (err) {
-                        return console.log(err);
+                        executeDfd.reject(err);
                     }
 
                     console.log('Build ' + config.release + ' created in ' + chcpContext.sourceDirectory);
